@@ -1,4 +1,5 @@
 from errbot import BotPlugin, botcmd
+from dateutil.parser import parse
 
 import moduleGcalendar
 # https://github.com/fernand0/scripts/blob/master/moduleGcalendar.py
@@ -15,14 +16,18 @@ class ErrCalendar(BotPlugin):
         """
         super(ErrCalendar, self).activate()
 
-        self.calendar = moduleGcalendar.moduleGcalendar()
-        self.calendar.setClient('ACC0')
-        self.calendar.setCalendarList()
+        self.calendar = {}
+        self.accounts = ['ACC0', 'ACC1']
+        for name in self.accounts:
+            cal = moduleGcalendar.moduleGcalendar()
+            cal.setClient(name)
+            cal.setCalendarList()
 
-        if self.config['calendar'] != 'primary':
-            self.calendar.active = self.config['calendar']
-        else:
-            self.calendar.active = 'primary'
+            #if self.config['calendar'] != 'primary':
+            #    cal.active = self.config['calendar']
+            #else:
+            cal.active = 'primary'
+            self.calendar[name] = cal
 
     def get_configuration_template(self):
         """ configuration entries """
@@ -36,57 +41,89 @@ class ErrCalendar(BotPlugin):
     def listCal(self, msg, args):
         #for i, cal in enumerate(filter(lambda x: args.lower() 
         #             n x['summary'].lower(), self.calendar.getCalendarList())):
-        for i, cal in enumerate(self.calendar.getCalendarList()):
-            if args.lower() in cal['summary'].lower():
-                line = "%d) %s" % (i, cal['summary'])
-                yield(line)
+        for acc in self.calendar:
+            yield acc
+            for i, cal in enumerate(self.calendar[acc].getCalendarList()):
+                if args.lower() in cal['summary'].lower():
+                    line = "%d) %s" % (i, cal['summary'])
+                    yield(line)
         yield end()
 
     @botcmd
     def selCal(self, msg, args):
-        if args:
-            myCal = self.calendar.getCalendarList()[int(args)]
-            yield "Selected %s" % myCal['summary']
-            self.calendar.active = myCal['summary']
-            for cal in  self.cal(msg, args):
-                yield cal
+        if args.find(' ')>0:
+            argsS = args.split(' ')
+            if (len(argsS) == 3):
+                date = argsS[2]
+                whichCal = argsS[0]
+                argsL = argsS[1]
+            elif(len(argsS) == 2):
+                whichCal = argS[0]
+                argsL = args
+        else:
+            argsL = args
+            whichCal = '012' 
 
+        if args:
+            for i, acc in enumerate(self.calendar):
+                if str(i) in whichCal:
+                    cal = self.calendar[acc]
+                    myCal = cal.getCalendarList()[int(argsL)]
+                    yield "Selected %s" % myCal['summary']
+                    cal.setActive(myCal['id'])
+            for ca in self.cal(msg, args):
+                yield ca
+        yield end()
 
     @botcmd
     def showCal(self, msg, args):
         for cal in  self.cal(msg, args):
             yield cal
-         
-        
-    def cal(self, msg, args):
-
-        self.calendar.setPosts()
-        for i, event in enumerate(self.calendar.getPosts()):
-            line = "%d) " % i
-            if 'start' in event:
-                if 'dateTime' in event['start']:
-                    dateS = event['start']['dateTime']
-                    import dateutil.parser
-                    dateSD = dateutil.parser.parse(dateS)
-                    dateE = event['end']['dateTime']
-                    newDateE = ''
-                    eq = 0
-                    for i, char in enumerate(dateE):
-                        if dateS[i] != dateE[i]:
-                            newDateE = newDateE + dateE[i]
-                            eq = 1
-                        elif eq == 1:
-                            break
-                    line = "%s %s, %d %d:%02d (%s) " % (line, dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE)
-                    #line = line + ' ' + dateSD.day+' '+dateSD.hour+':'+dateSD.minute + ' (Ends at ' + newDateE + ') '
-                elif 'date' in event['start']:
-                    line = line + ' ' +event['start']['date'] + ' (Ends at ' + event['end']['date']+')'
-            if 'summary' in event:
-                line = line + event['summary']
-            else:
-                line = line + 'Busy'
-
-            yield(line)
-
         yield end()
+         
+    def cal(self, msg, args):
+        if args.find(' ')>0:
+            argsS = args.split(' ')
+            if (len(argsS) == 3):
+                date = argsS[2]
+                whichCal = argsS[0]
+                argsL = argsS[1]
+            elif(len(argsS) == 2):
+                whichCal = argS[0]
+                argsL = args
+        else:
+            argsL = args
+            whichCal = '012' 
+
+        for i, acc in enumerate(self.calendar):
+            if str(i) in whichCal:
+                cal = self.calendar[acc]
+                cal.setPosts(date)
+                yield cal.nick
+                for i, event in enumerate(cal.getPosts()):
+                    line = "%d) " % i
+                    if 'start' in event:
+                        if 'dateTime' in event['start']:
+                            dateS = event['start']['dateTime']
+                            import dateutil.parser
+                            dateSD = dateutil.parser.parse(dateS)
+                            dateE = event['end']['dateTime']
+                            newDateE = ''
+                            eq = 0
+                            for i, char in enumerate(dateE):
+                                if dateS[i] != dateE[i]:
+                                    newDateE = newDateE + dateE[i]
+                                    eq = 1
+                                elif eq == 1:
+                                    break
+                            line = "%s %s, %d %d:%02d (%s) " % (line, dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE)
+                            #line = line + ' ' + dateSD.day+' '+dateSD.hour+':'+dateSD.minute + ' (Ends at ' + newDateE + ') '
+                        elif 'date' in event['start']:
+                            line = line + ' ' +event['start']['date'] + ' (Ends at ' + event['end']['date']+')'
+                    if 'summary' in event:
+                        line = line + event['summary']
+                    else:
+                        line = line + 'Busy'
+
+                    yield(line)
 
