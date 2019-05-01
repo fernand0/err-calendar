@@ -19,6 +19,11 @@ class ErrCalendar(BotPlugin):
         self.calendar.setClient('ACC0')
         self.calendar.setCalendarList()
 
+        if self.config['calendar'] != 'primary':
+            self.calendar.active = self.config['calendar']
+        else:
+            self.calendar.active = 'primary'
+
     def get_configuration_template(self):
         """ configuration entries """
         config = {
@@ -28,11 +33,32 @@ class ErrCalendar(BotPlugin):
         return config
 
     @botcmd
+    def listCal(self, msg, args):
+        #for i, cal in enumerate(filter(lambda x: args.lower() 
+        #             n x['summary'].lower(), self.calendar.getCalendarList())):
+        for i, cal in enumerate(self.calendar.getCalendarList()):
+            if args.lower() in cal['summary'].lower():
+                line = "%d) %s" % (i, cal['summary'])
+                yield(line)
+        yield end()
+
+    @botcmd
+    def selCal(self, msg, args):
+        if args:
+            myCal = self.calendar.getCalendarList()[int(args)]
+            yield "Selected %s" % myCal['summary']
+            self.calendar.active = myCal['summary']
+            for cal in  self.cal(msg, args):
+                yield cal
+
+
+    @botcmd
+    def showCal(self, msg, args):
+        for cal in  self.cal(msg, args):
+            yield cal
+         
+        
     def cal(self, msg, args):
-        if self.config['calendar'] != 'primary':
-            self.calendar.active = self.config['calendar']
-        else:
-            self.calendar.active = 'primary'
 
         self.calendar.setPosts()
         for i, event in enumerate(self.calendar.getPosts()):
