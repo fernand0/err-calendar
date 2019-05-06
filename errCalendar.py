@@ -1,4 +1,5 @@
 from errbot import BotPlugin, botcmd
+from errbot.templating import tenv
 from dateutil.parser import parse
 
 import moduleGcalendar
@@ -58,8 +59,8 @@ class ErrCalendar(BotPlugin):
                 whichCal = argsS[0]
                 argsL = argsS[1]
             elif(len(argsS) == 2):
-                whichCal = argS[0]
-                argsL = args
+                whichCal = argsS[1]
+                argsL = argsS[0]
         else:
             argsL = args
             whichCal = '012' 
@@ -89,9 +90,11 @@ class ErrCalendar(BotPlugin):
                 whichCal = argsS[0]
                 argsL = argsS[1]
             elif(len(argsS) == 2):
-                whichCal = argS[0]
-                argsL = args
+                date = ''
+                whichCal = argsS[1]
+                argsL = argsS[0]
         else:
+            date = ''
             argsL = args
             whichCal = '012' 
 
@@ -100,6 +103,7 @@ class ErrCalendar(BotPlugin):
                 cal = self.calendar[acc]
                 cal.setPosts(date)
                 yield cal.nick
+                updates = []
                 for i, event in enumerate(cal.getPosts()):
                     line = "%d) " % i
                     if 'start' in event:
@@ -122,8 +126,13 @@ class ErrCalendar(BotPlugin):
                             line = line + ' ' +event['start']['date'] + ' (Ends at ' + event['end']['date']+')'
                     if 'summary' in event:
                         line = line + event['summary']
+                        update = (dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE, event['summary'])
                     else:
                         line = line + 'Busy'
+                        update = (dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE, 'Busy')
+                    updates.append(update)
 
-                    yield(line)
+                    #yield(line)
 
+                response = tenv().get_template('calendar.md').render({'updates': updates})
+                yield response
