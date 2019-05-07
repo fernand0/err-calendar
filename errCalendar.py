@@ -44,10 +44,15 @@ class ErrCalendar(BotPlugin):
         #             n x['summary'].lower(), self.calendar.getCalendarList())):
         for acc in self.calendar:
             yield acc
+            updates = []
             for i, cal in enumerate(self.calendar[acc].getCalendarList()):
                 if args.lower() in cal['summary'].lower():
                     line = "%d) %s" % (i, cal['summary'])
-                    yield(line)
+                    update = (i, cal['summary'])
+                    updates.append(update)
+                    #yield(line)
+            response = tenv().get_template('listCalendar.md').render({'updates': updates})
+            yield response
         yield end()
 
     @botcmd
