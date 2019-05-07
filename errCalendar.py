@@ -97,29 +97,57 @@ class ErrCalendar(BotPlugin):
         yield end()
          
     def cal(self, msg, args):
-        if args.find(' ')>0:
-            argsS = args.split(' ')
-            if (len(argsS) == 3):
-                date = argsS[2]
-                whichCal = argsS[0]
-                argsL = argsS[1]
-            elif(len(argsS) == 2):
+        if args:
+            if args.find(' ')>0:
+                argsS = args.split(' ')
+                if (len(argsS) == 3):
+                    date = argsS[2]
+                    whichCal = argsS[0]
+                    argsL = argsS[1]
+                elif(len(argsS) == 2):
+                    date = ''
+                    whichCal = argsS[0]
+                    argsL = argsS[1]
+            else:
                 date = ''
-                whichCal = argsS[1]
-                argsL = argsS[0]
+                argsL = args
+                whichCal = '012' 
         else:
-            date = ''
-            argsL = args
-            whichCal = '012' 
+                date = ''
+                argsL = args
+                whichCal = '012' 
 
         for i, acc in enumerate(self.calendar):
             if str(i) in whichCal:
                 cal = self.calendar[acc]
+                if argsL:
+                    if argsL.isdigit():
+                        myCal = cal.getCalendarList()[int(argsL)]
+                    else:
+                        for c in cal.getCalendarList():
+                            if argsL in c['summary']: 
+                                myCal = c
+                                break
+                else: 
+                    myCal = None
+
+                if myCal:
+                    yield "Selected %s" % myCal['summary']
+                    cal.setActive(myCal['id'])
+                else:
+                    cal.setActive('primary')
+
                 cal.setPosts(date)
+
                 yield cal.nick
                 updates = []
                 for i, event in enumerate(cal.getPosts()):
                     line = "%d) " % i
+                    if 'summary' in event:
+                        title = event['summary']
+                    else:
+                        title = 'Busy'
+
                     if 'start' in event:
                         if 'dateTime' in event['start']:
                             dateS = event['start']['dateTime']
@@ -134,16 +162,12 @@ class ErrCalendar(BotPlugin):
                                     eq = 1
                                 elif eq == 1:
                                     break
-                            line = "%s %s, %d %d:%02d (%s) " % (line, dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE)
-                            #line = line + ' ' + dateSD.day+' '+dateSD.hour+':'+dateSD.minute + ' (Ends at ' + newDateE + ') '
+                            update = (dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE, title)
                         elif 'date' in event['start']:
-                            line = line + ' ' +event['start']['date'] + ' (Ends at ' + event['end']['date']+')'
-                    if 'summary' in event:
-                        line = line + event['summary']
-                        update = (dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE, event['summary'])
-                    else:
-                        line = line + 'Busy'
-                        update = (dateSD.strftime("%a"), dateSD.day, dateSD.hour, dateSD.minute, newDateE, 'Busy')
+                            date1 = event['start']['date'].split('-')
+                            date2 = event['end']['date'].split('-')
+                            update = (0, int(date1[2]), 0, 0, int(date2[2]), title)
+                            self.log.info("Event %s" % str(update))
                     updates.append(update)
 
                     #yield(line)
