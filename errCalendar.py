@@ -66,8 +66,8 @@ class ErrCalendar(BotPlugin):
             whichCal = '012' 
 
         if args:
-            for i, acc in enumerate(self.calendar):
-                if str(i) in whichCal:
+                # Acc : ACC0, ACC1
+                if (str(i) == whichCal):
                     cal = self.calendar[acc]
                     myCal = cal.getCalendarList()[int(argsL)]
                     yield "Selected %s" % myCal['summary']
