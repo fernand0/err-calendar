@@ -66,15 +66,21 @@ class ErrCalendar(BotPlugin):
             whichCal = '012' 
 
         if args:
-                # Acc : ACC0, ACC1
+            myCal = None
             for i, acc in enumerate(self.calendar):
-                self.log.info("i acc %d %s" %(i,acc))
+                # Acc : ACC0, ACC1
                 if (str(i) in whichCal):
                     cal = self.calendar[acc]
-                    self.log.info("Cal %s" % argsL)
-                    myCal = cal.getCalendarList()[int(argsL)]
-                    yield "Selected %s" % myCal['summary']
-                    cal.setActive(myCal['id'])
+                    if argsL.isdigit():
+                        myCal = cal.getCalendarList()[int(argsL)]
+                    else:
+                        for c in cal.getCalendarList():
+                            if argsL in c['summary']: 
+                                myCal = c
+                                break
+            if myCal:
+                yield "Selected %s" % myCal['summary']
+                cal.setActive(myCal['id'])
             for ca in self.cal(msg, args):
                 yield ca
         yield end()
