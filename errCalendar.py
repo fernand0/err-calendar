@@ -40,6 +40,8 @@ class ErrCalendar(BotPlugin):
 
     @botcmd
     def listCal(self, msg, args):
+        """ Show a list of calendars available
+        """
         #for i, cal in enumerate(filter(lambda x: args.lower() 
         #             n x['summary'].lower(), self.calendar.getCalendarList())):
         for acc in self.calendar:
@@ -56,68 +58,34 @@ class ErrCalendar(BotPlugin):
         yield end()
 
     @botcmd
-    def selCal(self, msg, args):
-        if args.find(' ')>0:
-            argsS = args.split(' ')
-            if (len(argsS) == 3):
-                date = argsS[2]
-                whichCal = argsS[0]
-                argsL = argsS[1]
-            elif(len(argsS) == 2):
-                whichCal = argsS[0]
-                argsL = argsS[1]
-        else:
-            argsL = args
-            whichCal = '012' 
-
-        if args:
-            myCal = None
-            for i, acc in enumerate(self.calendar):
-                # Acc : ACC0, ACC1
-                if (str(i) in whichCal):
-                    cal = self.calendar[acc]
-                    if argsL.isdigit():
-                        myCal = cal.getCalendarList()[int(argsL)]
-                    else:
-                        for c in cal.getCalendarList():
-                            if argsL in c['summary']: 
-                                myCal = c
-                                break
-            if myCal:
-                yield "Selected %s" % myCal['summary']
-                cal.setActive(myCal['id'])
-            for ca in self.cal(msg, args):
-                yield ca
-        yield end()
-
-    @botcmd
     def showCal(self, msg, args):
+        """ Show content of the selected calendar. Optionally it can show 
+        the calendar from a given date.
+        """
         for cal in  self.cal(msg, args):
             yield cal
         yield end()
          
     def cal(self, msg, args):
+        date = ''
+        argsL = args
+        whichCal = '012' 
         if args:
             if args.find(' ')>0:
                 argsS = args.split(' ')
-                if (len(argsS) == 3):
-                    date = argsS[2]
+                self.log.info("len %s"% len(argsS))
+                if (len(argsS) >= 3):
+                    date = ' '.join(argsS[2:])
                     whichCal = argsS[0]
                     argsL = argsS[1]
                 elif(len(argsS) == 2):
                     date = ''
                     whichCal = argsS[0]
                     argsL = argsS[1]
-            else:
-                date = ''
-                argsL = args
-                whichCal = '012' 
-        else:
-                date = ''
-                argsL = args
-                whichCal = '012' 
 
+        self.log.info("date %s args0 %s args1 %s"% (date, whichCal, argsL))
         for i, acc in enumerate(self.calendar):
+            myCal = None
             if str(i) in whichCal:
                 cal = self.calendar[acc]
                 if argsL:
@@ -128,8 +96,6 @@ class ErrCalendar(BotPlugin):
                             if argsL in c['summary']: 
                                 myCal = c
                                 break
-                else: 
-                    myCal = None
 
                 if myCal:
                     yield "Selected %s" % myCal['summary']
@@ -137,7 +103,7 @@ class ErrCalendar(BotPlugin):
                 else:
                     cal.setActive('primary')
 
-                cal.setPosts(date)
+                yield("Date %s" % cal.setPosts(date))
 
                 yield cal.nick
                 updates = []
