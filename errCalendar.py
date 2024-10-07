@@ -2,7 +2,9 @@ from errbot import BotPlugin, botcmd
 from errbot.templating import tenv
 from dateutil.parser import parse
 
-import moduleGcalendar
+from socialModules.configMod import *
+import socialModules
+import socialModules.moduleGcalendar
 # https://github.com/fernand0/scripts/blob/master/moduleGcalendar.py
 
 def end(msg=""):
@@ -13,14 +15,15 @@ class ErrCalendar(BotPlugin):
     def activate(self):
         """
         Triggers on plugin activation
-        You should delete it if you're not using it to override any default behaviour
+        You should delete it if you're not using it to override any default
+        behaviour 
         """
         super(ErrCalendar, self).activate()
 
         self.calendar = {}
         self.accounts = ['ACC0', 'ACC1']
         for name in self.accounts:
-            cal = moduleGcalendar.moduleGcalendar()
+            cal = socialModules.moduleGcalendar.moduleGcalendar()
             cal.setClient(name)
             cal.setCalendarList()
 
