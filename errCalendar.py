@@ -4,6 +4,7 @@ from dateutil.parser import parse
 
 from socialModules.configMod import *
 import socialModules
+import socialModules.moduleRules
 import socialModules.moduleGcalendar
 # https://github.com/fernand0/scripts/blob/master/moduleGcalendar.py
 
@@ -20,18 +21,43 @@ class ErrCalendar(BotPlugin):
         """
         super(ErrCalendar, self).activate()
 
-        self.calendar = {}
-        self.accounts = ['ACC0', 'ACC1']
-        for name in self.accounts:
-            cal = socialModules.moduleGcalendar.moduleGcalendar()
-            cal.setClient(name)
-            cal.setCalendarList()
+        rules = socialModules.moduleRules.moduleRules()
+        rules.checkRules()
 
-            #if self.config['calendar'] != 'primary':
-            #    cal.active = self.config['calendar']
-            #else:
-            cal.active = 'primary'
-            self.calendar[name] = cal
+
+        apiSrc = ""
+        logging.info(f"Rules {rules.available}")
+        selected = rules.selectRule('gcalendar','') 
+        logging.info(f"Selected {selected}")
+        src = selected[0]
+        if src in rules.more:
+            more = rules.more[src]
+        else:
+            more = None
+        apiSrc = rules.readConfigSrc("", src, more)
+
+
+        #FIXME
+
+
+        self.calendar = {}
+        cal = apiSrc
+        #cal.setCalendarlist()
+        cal.active = 'primary'
+
+        self.calendar['cal1'] = cal
+
+        # self.accounts = ['ACC0', 'ACC1']
+        # for name in self.accounts:
+        #     cal = socialModules.moduleGcalendar.moduleGcalendar()
+        #     cal.setClient(name)
+        #     cal.setCalendarList()
+
+        #     #if self.config['calendar'] != 'primary':
+        #     #    cal.active = self.config['calendar']
+        #     #else:
+        #     cal.active = 'primary'
+        #     self.calendar[name] = cal
 
     def get_configuration_template(self):
         """ configuration entries """
@@ -48,7 +74,8 @@ class ErrCalendar(BotPlugin):
         #for i, cal in enumerate(filter(lambda x: args.lower() 
         #             n x['summary'].lower(), self.calendar.getCalendarList())):
         for acc in self.calendar:
-            yield acc
+            yield acc 
+            self.calendar[acc].setCalendarList()
             updates = []
             for i, cal in enumerate(self.calendar[acc].getCalendarList()):
                 if args.lower() in cal['summary'].lower():
